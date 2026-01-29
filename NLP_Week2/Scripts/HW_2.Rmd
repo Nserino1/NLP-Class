@@ -49,7 +49,7 @@ library(tidytext)
  # 1. Read 'sticks_messy.txt' into R
 ```{r}
 #read in my txt file as a string
-text <- read_file("/Users/tut38747/Library/CloudStorage/OneDrive-TempleUniversity/Serino_RData/NLP_Week2/Data/sticks_messy.txt")
+text <- read_file("/Users/tut38747/Library/CloudStorage/OneDrive-TempleUniversity/Serino_RData/NLP-Class/NLP_Week2/Data/sticks_messy.txt")
 ```
    
     

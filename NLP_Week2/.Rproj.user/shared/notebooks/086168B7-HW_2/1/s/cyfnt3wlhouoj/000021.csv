@@ -1,2 +1,0 @@
-"0","words <- tibble(unlist(strsplit(clean_txt, "" ""))) "
-"0","words"
