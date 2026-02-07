@@ -1,9 +1,9 @@
 ---
-title: "Unabomber"
+title: "HW3"
 author: "Nicole Serino"
 date: "2026-01-21"
-output: html_document
- html_document:
+output:
+  html_document:
     toc: true
     toc_float: true 
     toc_depth: 1
@@ -12,13 +12,14 @@ output: html_document
 
 
 ```{r}
-
-
 library(stringi)
 library(tidytext)
 library(stringr)
-
+library(readtext)
+library(textstem)
 ```
+
+
 
 ```{r setup, include=F}
 knitr::opts_chunk$set(fig.width=8, fig.height=5, fig.align = 'left', fig.path='Figs/', cache.path='Cache/', eval=T, echo=T, tidy=TRUE,  cache=F, message=F, warning=F, stringsAsFactors=F, yaml.eval.expr = TRUE)  
@@ -48,54 +49,106 @@ registerS3method("knit_print", "data.frame", print.me)
 ```
 
 
-Create Cleaning Function
+
+# Create Cleaning Function
 ```{r}
-
-#create my cleaning function
 clean <- function(x) {
-  
-#make all lowercase
-  x <- tolower(x)
-  
- x <- (dat = x,
-                  
 
-#remove all numbers from text
-  x <- gsub("[[:digit:]]", " ", x)
-  
-#remove all punctuation
- # x <- gsub("[[:punct:]]", " ", x)
+# Make all lowercase with tolower
+x <- tolower(x)
+# Remove all number digits from text
+x <- gsub("[[:digit:]]", " ", x)
+# Removing all singleton characters
+x <- gsub("\\s.\\s", " ", x)
+# Remove extra spaces that occur more than once in a row
+x <- gsub("\\s+", " ", x)
 
-#remove any single character tht isnt "a" ot "i". How: Remove any character that isnt "a" or "i" that is a singleton becuase it exists between two whitespaces.
-  x <- gsub("\\s[^ai]\\s", " ", x)
+# Split the text into individual words and keep as a tibble
+split <- tibble(word = unlist(strsplit(x, " ")))
 
-#remove extra space by removing whitespace characters that occur more than once in a row. 
-  x <- gsub("\\s+", " ", x)
-  x <- stri_remove_empty(x)
+# ===============================
+# REMOVE CONTRACTIONS
+# loading contraction replacement rda
+load("/Users/tut38747/Library/CloudStorage/OneDrive-TempleUniversity/Serino_RData/NLP-Class/NLP_Week3/replacements_25.rda")
+
+# Apply replacements to each word
+split$word <- stri_replace_all_fixed(
+    split$word,
+    pattern = replacements_25$word,
+    replacement = replacements_25$replacement,
+    vectorize_all = FALSE)
+
+# ===============================
+# REMOVE STOPWORDS
+
+# Load first stopword list
+load("/Users/tut38747/Library/CloudStorage/OneDrive-TempleUniversity/Serino_RData/NLP-Class/NLP_Week3/Temple_stops25.rda")
+Temple_stops25 <- as.character(Temple_stops25$word)
+
+# Load second stopword list
+load("/Users/tut38747/Library/CloudStorage/OneDrive-TempleUniversity/Serino_RData/NLP-Class/NLP_Week3/SMART_stops.rda")
+SMART_stops <- as.character(SMART_stops$word)
+
+# Remove words both lists
+split <- split %>% filter(!word %in% SMART_stops)
+split <- split %>% filter(!word %in% Temple_stops25)
+
+
+# ===============================
+# Split again (contractions were in same cell)
+split2 <- split %>%
+    mutate(word = strsplit(word, " ")) %>%  #
+    unnest(word)                          
+
+split2 <- split2 %>%
+    mutate(word = trimws(word)) %>%    
+    mutate(word = gsub("[[:punct:]]", "", word)) 
+
+# ===============================
+# Lemmatize
+split2 <- split2 %>%
+    mutate(word = lemmatize_words(word))
+
+# ===============================
+# extra cleaning
+
+# Remove digits again in case replacements revealed digits
+split2$word <- gsub("[[:digit:]]", " ", split2$word)
+# Remove again
+split2$word <- gsub("\\s.\\s", " ", split2$word)
+# Remove again
+split2$word <- gsub("\\s+", " ", split2$word)
+
   
-  print(x)
+#print
+return(split2)
 }
-
 ```
 
+# Clean Unabomber Manifesto
 ```{r}
 unabomb <- paste(readLines('https://raw.githubusercontent.com/Reilly-ConceptsCognitionLab/reillylab_publicdata/main/unabomber_manifesto.txt'))
-
 #Print first few lines of unabomber manifesto
-cat(unabomb[1:50], sep = "\n")
+cat(unabomb[1:10], sep = "\n")
 
-
+#clean unabomber text
+clean(unabomb)
 ```
-
-
+# Clean Pride and Predjudice
 ```{r}
 
-#clean unabomber
+pride <- readtext("/Users/tut38747/Library/CloudStorage/OneDrive-TempleUniversity/Serino_RData/NLP-Class/NLP_Week2/Data/PridePrejudice.txt")
 
-clean(unabomb)
-
+clean(pride)
 ```
 
 
+# Clean Moby Dick
+```{r}
+mobydick <- as.character(readtext("http://www.gutenberg.org/cache/epub/2701/pg2701.txt"))
+cat(mobydick[1:10], sep = "\n")
+
+clean(mobydick)
+```
 
 
