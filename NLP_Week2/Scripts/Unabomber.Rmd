@@ -125,6 +125,8 @@ return(split2)
 }
 ```
 
+
+
 # Clean Unabomber Manifesto
 ```{r}
 unabomb <- paste(readLines('https://raw.githubusercontent.com/Reilly-ConceptsCognitionLab/reillylab_publicdata/main/unabomber_manifesto.txt'))

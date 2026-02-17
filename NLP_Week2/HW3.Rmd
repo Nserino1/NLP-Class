@@ -1,0 +1,293 @@
+---
+title: "HW4"
+author: "Nicole Serino"
+date: "2026-02-11"
+output:
+  html_document:
+    toc: true
+    toc_float: true 
+    toc_depth: 1
+    css: !expr here::here("../StylesTemplates/NS.css")
+---
+
+# Load Packages
+```{r}
+
+library(stringi)
+library(tidytext)
+library(stringr)
+library(readtext)
+library(quanteda.textplots)
+library(quanteda)
+library(textstem)
+library(quanteda.textstats)
+```
+
+
+```{r setup, include=F}
+knitr::opts_chunk$set(fig.width=8, fig.height=5, fig.align = 'left', fig.path='Figs/', cache.path='Cache/', eval=T, echo=T, tidy=TRUE,  cache=F, message=F, warning=F, stringsAsFactors=F, yaml.eval.expr = TRUE)  
+
+library(xfun)
+pkg_attach("tidyverse", "here", "kableExtra", "RCurl", "psych", "knitr", "RColorBrewer", 'dplyr', install=T)
+
+jamie.theme <- theme_bw() + theme(axis.line = element_line(colour = "#000000"), panel.grid.minor = element_blank(), panel.grid.major = element_blank(), panel.border = element_blank(), panel.background = element_blank(), legend.title= element_blank())  #custom theme ggplot2
+
+print.me <- function(x, ...) {
+if (nrow(x) > 200){
+   len <- 200 
+    } else {
+       len <- (nrow(x))
+}
+   x[1:len,] %>%
+   kbl(digits=2, align= 'l', booktabs=T) %>%
+   kable_styling(fixed_thead = T) %>%
+   kable_paper("striped", full_width = T, html_font = "Helvetica", font_size = 12) %>%
+   row_spec(0, color = "white", background = "#5b705f", font_size = 12) %>%
+   scroll_box(width = "700px", height = "500px") %>%
+   asis_output()
+}
+
+registerS3method("knit_print", "data.frame", print.me)
+#to_R <- read.csv(here("data", "MyRaw.txt")) ---- using 'here' to read in data
+```
+
+
+
+# Create Cleaning Genie
+```{r}
+nicole_genie <- function(x, lemmatize = TRUE, omit_stops = TRUE, 
+local_path = "~/Library/CloudStorage/OneDrive-TempleUniversity/Serino_RData/NLP-Class/NLP_Week3/") 
+  {
+
+  library(dplyr)
+  library(tidyr)
+  library(stringr)
+  library(stringi)
+  
+  
+  # _________________________________________________________________
+  # Input Validation
+  # _________________________________________________________________
+  
+  # Check that input is a character string
+if (!is.character(x)) stop("NOT A STRING! :(")
+  
+  # _________________________________________________________________
+  # Load cleaning data
+  # _________________________________________________________________
+  
+  # loading stopword lists
+stops_file <- file.path(local_path, "Temple_stops25.rda")
+replacements_file <- file.path(local_path, "replacements_25.rda")
+  
+load(stops_file)
+load(replacements_file)
+  # _________________________________________________________________
+  # Text cleaning 1
+  # _________________________________________________________________
+  
+  # Make all lowercase
+x <- tolower(x)
+  
+  # Standardize apostrophes
+x <- stringi::stri_replace_all_regex(
+    x,
+    "[\u2018\u2019\u02BC\u201B\uFF07\u0092\u0091\u0060\u00B4\u2032\u2035]",
+    "'"
+  )
+  
+  # Remove all number digits from text
+x <- gsub("[[:digit:]]", " ", x)
+  
+  # Remove singleton characters (single letters surrounded by spaces)
+x <- gsub("\\s.\\s", " ", x)
+  
+  # Remove extra spaces that occur more than once in a row
+x <- gsub("\\s+", " ", x)
+  
+  # Trim leading/trailing whitespace
+x <- trimws(x)
+  
+  # Split the text into individual words and keep as a tibble
+split <- tibble(word = unlist(strsplit(x, " ")))
+  
+  # Remove empty strings
+split <- split %>% filter(word != "")
+  
+  # _________________________________________________________________
+  # Split
+  # _________________________________________________________________
+  
+split$word <- stringi::stri_replace_all_fixed(
+    split$word,
+    pattern = replacements_25$word,
+    replacement = replacements_25$replacement,
+    vectorize_all = FALSE
+  )
+  
+  # _________________________________________________________________
+  # Remove Stop Words
+  # _________________________________________________________________
+  
+if (omit_stops) {
+    Temple_stops25_vec <- as.character(Temple_stops25$word)
+    split <- split %>% filter(!word %in% Temple_stops25_vec)
+  }
+  
+ # Remove empty strings that may have been left
+split <- split %>% filter(word != "")
+  
+   # _________________________________________________________________
+  # Split agian
+  # _________________________________________________________________
+split2 <- split %>%
+    mutate(word = strsplit(word, " ")) %>%
+    unnest(word)
+  
+split2 <- split2 %>%
+    mutate(word = trimws(word)) %>%
+    filter(word != "")  # Remove empty strings early
+  
+  # Remove punctuation
+split2 <- split2 %>%
+    mutate(word = gsub("[[:punct:]]", "", word))
+  
+split2 <- split2 %>% filter(word != "")
+  
+  # _________________________________________________________________
+  # Lemmatize
+  # _________________________________________________________________
+  
+if (lemmatize) {
+split2 <- split2 %>%
+      mutate(word = textstem::lemmatize_words(word))
+  }
+  
+  # _________________________________________________________________
+  # Clean
+  # _________________________________________________________________
+  
+  # Remove digits that may have been revealed by replacements
+split2$word <- gsub("[[:digit:]]", " ", split2$word)
+  # Remove singleton characters again
+split2$word <- gsub("\\s.\\s", " ", split2$word)
+  # Remove extra spaces again
+split2$word <- gsub("\\s+", " ", split2$word)
+  # Trim whitespace
+split2 <- split2 %>% mutate(word = trimws(word))
+  # Remove any remaining empty strings or NA values
+split2 <- split2 %>%
+    filter(word != "" & !is.na(word))
+  # Remove abbreviations and short words
+split2 <- split2 %>%
+    filter(nchar(word) > 2)
+  
+  # _________________________________________________________________
+  # Print
+  # _________________________________________________________________
+  
+print(split2)
+}
+```
+
+# Read in the Unabomber Manifesto
+Read from github repo and output its structure
+```{r}
+read_text <- function(url) {paste(readLines(url), collapse = " ")}
+  
+unabomb <- read_text('https://raw.githubusercontent.com/Reilly-ConceptsCognitionLab/reillylab_publicdata/main/unabomber_manifesto.txt')
+
+substr(unabomb, 1, 1000)
+```
+
+# Clean Unabomber Manifesto
+
+This text preprocessing will do basic cleaning including lowercasing, removing numbers and 
+punctuation, expanding contractions, removing stopwords, and lemmatizating.
+```{r}
+unabomb_clean <- nicole_genie(unabomb)
+```
+
+
+# Import Clean Text in Quanteda
+
+Create a Quanteda corpus 
+```{r}
+# collampse words
+unabomb_text <- paste(unabomb_clean$word, collapse = " ")
+
+# Create corpus
+unabomb_corpus <- corpus(unabomb_text)
+```
+
+
+# Summary of Unabomber Corpus
+```{r}
+summary(unabomb_corpus)
+```
+
+
+# Document Feature Matrix (DFM) (top 20 words)
+This will tokenize the corpus and create a dfm to discover the most frequently used words in the corpus (top 20)
+```{r}
+tokens_unabomb <- quanteda::tokens(
+  unabomb_corpus,
+  remove_numbers = TRUE,
+  remove_punct = TRUE
+)
+tokens_unabomb <- quanteda::tokens(unabomb_corpus)
+
+
+# Create document feature matrix (dfm)
+dfm_unabomb <- dfm(tokens_unabomb)
+topfeatures(dfm_unabomb, 20)
+
+```
+
+# Create Wordcloud
+A word cloud displays word frequency in corpus
+```{r}
+quanteda.textplots::textplot_wordcloud(dfm_unabomb, random_order = FALSE, rotation = 0.25, color = "red") 
+```
+
+
+
+
+
+# Create Pre/Post Cleaning Table
+This will create a table that compare the raw and cleaned which will quantify the value of our text cleaning. 
+```{r}
+# PRE
+corp <- corpus(unabomb)
+pre_tokens <- ntoken(corp)
+pre_types <- ntype(corp)
+pre_ttr <- textstat_lexdiv(dfm(quanteda::tokens(corp)), measure = "TTR")
+
+# POST
+post_tokens <- ntoken(unabomb_corpus)
+post_types <- ntype(unabomb_corpus)
+post_ttr <- textstat_lexdiv(dfm_unabomb, measure = "TTR")
+
+# Create comparison table
+table <- data.frame(
+  Metric = c("Tokens", "Types", "TTR"),
+  Pre = c(sum(pre_tokens), sum(pre_types), round(mean(pre_ttr$TTR), 4)),
+  Post = c(sum(post_tokens), sum(post_types), round(mean(post_ttr$TTR), 4))
+)
+
+print(table)
+```
+
+# Create Lexical Dispersion Plot (5 words)
+Shows where where five key words appear throughout the corpus. 
+```{r}
+textplot_xray(
+  kwic(tokens_unabomb, pattern = "psychological"),
+  kwic(tokens_unabomb, pattern = "leftist"),
+  kwic(tokens_unabomb, pattern = "power"),
+  kwic(tokens_unabomb, pattern = "violence"),
+  kwic(tokens_unabomb, pattern = "social"),
+  scale = "absolute"
+)
+```
+
