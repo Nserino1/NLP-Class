@@ -1,0 +1,108 @@
+---
+title: "Cheatsheet"
+author: "Nicole Serino"
+date: "2026-01-21"
+output:
+  html_document:
+    toc: true
+    toc_float: true 
+    toc_depth: 1
+    css: !expr here::here("/Users/tut38747/Library/CloudStorage/OneDrive-TempleUniversity/Serino_RData/NLP-Class/StylesTemplates/NS.css")
+---
+
+```{r setup, include=F}
+knitr::opts_chunk$set(fig.width=8, fig.height=5, fig.align = 'left', fig.path='Figs/', cache.path='Cache/', eval=T, echo=T, tidy=TRUE,  cache=F, message=F, warning=F, stringsAsFactors=F, yaml.eval.expr = TRUE)  
+
+library(xfun)
+pkg_attach("tidyverse", "here", "kableExtra", "RCurl", "psych", "knitr", "RColorBrewer", 'dplyr', install=T)
+
+jamie.theme <- theme_bw() + theme(axis.line = element_line(colour = "#000000"), panel.grid.minor = element_blank(), panel.grid.major = element_blank(), panel.border = element_blank(), panel.background = element_blank(), legend.title= element_blank())  #custom theme ggplot2
+
+print.me <- function(x, ...) {
+if (nrow(x) > 200){
+   len <- 200 
+    } else {
+       len <- (nrow(x))
+}
+   x[1:len,] %>%
+   kbl(digits=2, align= 'l', booktabs=T) %>%
+   kable_styling(fixed_thead = T) %>%
+   kable_paper("striped", full_width = T, html_font = "Helvetica", font_size = 12) %>%
+   row_spec(0, color = "white", background = "#5b705f", font_size = 12) %>%
+   scroll_box(width = "700px", height = "500px") %>%
+   asis_output()
+}
+
+registerS3method("knit_print", "data.frame", print.me)
+#to_R <- read.csv(here("data", "MyRaw.txt")) ---- using 'here' to read in data
+```
+
+
+
+# Reading Text Data
+```{r, eval=FALSE}
+# Load readr package to use read_file function
+library(readr)
+
+# use read file to read data in as a string
+df <- read_file("Path/to/file")
+```
+   
+    
+# Text Cleaning Functions
+```{r, eval=FALSE}
+# tolower() Convert all text to lowercase
+  x <- tolower(x) 
+```
+
+Global Substitution (gsub)
+```{r, eval=FALSE}
+# gsub() - Global Substitution (built-in base R function)
+
+#remove any numbers from text
+  x <- gsub("[[:digit:]]", " ", x)
+  
+#remove all punctuation
+  x <- gsub("[[:punct:]]", " ", x)
+
+#remove any single character tht isnt "a" ot "i". How: Remove any character that isnt "a" or "i" that is a singleton becuase it exists between two whitespaces.
+  x <- gsub("\\b[^ai]\\b", " ", x)
+
+#remove extra spaces by removing whitespace characters that occur more than once in a row.  
+  x <- gsub("\\s+", " ", x)
+
+```
+
+
+# Split and Unlist Function
+```{r, eval=FALSE}
+
+# strsplit() - Split a string into parts (built-in base R)
+# unlist() - Convert a list to a vector (built-in base R)
+
+#Split string and unlist
+df <- unlist(strsplit(clean text dataframe, " "))
+
+#Split string and unlist so it is a vectr. Store each word in a row of a tibble.
+#This tibble will be a data frame with one column
+df <- tibble(unlist(strsplit(clean text dataframe, " "))) 
+
+```
+
+# Counting Rows and Unique Items To Manuelly Compute TTR
+```{r, eval=FALSE}
+# Type-Token Ratio = Unique words/Total words
+
+# Count total words (type) by counting rows
+type <- nrow(clean text dataframe)
+
+#Make a new tibble of only unique words from "words". One word per row
+df <- tibble(unique(unlist(clean text dataframe)))
+
+#Count how many unique words there are by calculating the # of rows un my unique word tibble.
+token <- nrow(df)
+
+#Calculate token- type ratio: Total unique words (token) over total number of words in text.
+TTR <- (token/type)
+TTR
+```
