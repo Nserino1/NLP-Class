@@ -1,0 +1,290 @@
+---
+title: "HW5"
+author: "Nicole Serino"
+date: "2026-02-25"
+output:
+  html_document:
+    toc: true
+    toc_float: true 
+    toc_depth: 1
+    css: !expr here::here("/Users/tut38747/Library/CloudStorage/OneDrive-TempleUniversity/Serino_RData/NLP-Class/StylesTemplates/NS_pro.css")
+---
+
+# Load Packages
+```{r}
+library(stringi)
+library(tidytext)
+library(stringr)
+library(readtext)
+library(quanteda.textplots)
+library(quanteda)
+library(textstem)
+library(quanteda.textstats)
+```
+
+
+```{r setup, include=F}
+knitr::opts_chunk$set(fig.width=8, fig.height=5, fig.align = 'left', fig.path='Figs/', cache.path='Cache/', eval=T, echo=T, tidy=TRUE,  cache=F, message=F, warning=F, stringsAsFactors=F, yaml.eval.expr = TRUE)  
+
+library(xfun)
+pkg_attach("tidyverse", "here", "kableExtra", "RCurl", "psych", "knitr", "RColorBrewer", 'dplyr', install=T)
+
+jamie.theme <- theme_bw() + theme(axis.line = element_line(colour = "#000000"), panel.grid.minor = element_blank(), panel.grid.major = element_blank(), panel.border = element_blank(), panel.background = element_blank(), legend.title= element_blank())  #custom theme ggplot2
+
+print.me <- function(x, ...) {
+if (nrow(x) > 200){
+   len <- 200 
+    } else {
+       len <- (nrow(x))
+}
+   x[1:len,] %>%
+   kbl(digits=2, align= 'l', booktabs=T) %>%
+   kable_styling(fixed_thead = T) %>%
+   kable_paper("striped", full_width = T, html_font = "Helvetica", font_size = 12) %>%
+   row_spec(0, color = "white", background = "#5b705f", font_size = 12) %>%
+   scroll_box(width = "700px", height = "500px") %>%
+   asis_output()
+}
+
+registerS3method("knit_print", "data.frame", print.me)
+#to_R <- read.csv(here("data", "MyRaw.txt")) ---- using 'here' to read in data
+```
+
+
+
+# Create Cleaning Genie
+```{r}
+nicole_genie <- function(x, lemmatize = TRUE, omit_stops = TRUE, 
+local_path = "~/Library/CloudStorage/OneDrive-TempleUniversity/Serino_RData/NLP-Class/NLP_Week3/") 
+  {
+
+  library(dplyr)
+  library(tidyr)
+  library(stringr)
+  library(stringi)
+  
+  
+  # _________________________________________________________________
+  # Input Validation
+  # _________________________________________________________________
+  
+  # Check that input is a character string
+if (!is.character(x)) stop("NOT A STRING! :(")
+  
+  # _________________________________________________________________
+  # Load cleaning data
+  # _________________________________________________________________
+  
+  # loading stopword lists
+stops_file <- file.path(local_path, "Temple_stops25.rda")
+replacements_file <- file.path(local_path, "replacements_25.rda")
+  
+load(stops_file)
+load(replacements_file)
+  # _________________________________________________________________
+  # Text cleaning 1
+  # _________________________________________________________________
+  
+  # Make all lowercase
+x <- tolower(x)
+  
+  # Standardize apostrophes
+x <- stringi::stri_replace_all_regex(
+    x,
+    "[\u2018\u2019\u02BC\u201B\uFF07\u0092\u0091\u0060\u00B4\u2032\u2035]",
+    "'"
+  )
+  
+  # Remove all number digits from text
+x <- gsub("[[:digit:]]", " ", x)
+  
+  # Remove singleton characters (single letters surrounded by spaces)
+x <- gsub("\\s.\\s", " ", x)
+  
+  # Remove extra spaces that occur more than once in a row
+x <- gsub("\\s+", " ", x)
+  
+  # Trim leading/trailing whitespace
+x <- trimws(x)
+  
+  # Split the text into individual words and keep as a tibble
+split <- tibble(word = unlist(strsplit(x, " ")))
+  
+  # Remove empty strings
+split <- split %>% filter(word != "")
+  
+  # _________________________________________________________________
+  # Split
+  # _________________________________________________________________
+  
+split$word <- stringi::stri_replace_all_fixed(
+    split$word,
+    pattern = replacements_25$word,
+    replacement = replacements_25$replacement,
+    vectorize_all = FALSE
+  )
+  
+  # _________________________________________________________________
+  # Remove Stop Words
+  # _________________________________________________________________
+  
+if (omit_stops) {
+    Temple_stops25_vec <- as.character(Temple_stops25$word)
+    split <- split %>% filter(!word %in% Temple_stops25_vec)
+  }
+  
+ # Remove empty strings that may have been left
+split <- split %>% filter(word != "")
+  
+   # _________________________________________________________________
+  # Split agian
+  # _________________________________________________________________
+split2 <- split %>%
+    mutate(word = strsplit(word, " ")) %>%
+    unnest(word)
+  
+split2 <- split2 %>%
+    mutate(word = trimws(word)) %>%
+    filter(word != "")  # Remove empty strings early
+  
+  # Remove punctuation
+split2 <- split2 %>%
+    mutate(word = gsub("[[:punct:]]", "", word))
+  
+split2 <- split2 %>% filter(word != "")
+  
+  # _________________________________________________________________
+  # Lemmatize
+  # _________________________________________________________________
+  
+if (lemmatize) {
+split2 <- split2 %>%
+      mutate(word = textstem::lemmatize_words(word))
+  }
+  
+  # _________________________________________________________________
+  # Clean
+  # _________________________________________________________________
+  
+  # Remove digits that may have been revealed by replacements
+split2$word <- gsub("[[:digit:]]", " ", split2$word)
+  # Remove singleton characters again
+split2$word <- gsub("\\s.\\s", " ", split2$word)
+  # Remove extra spaces again
+split2$word <- gsub("\\s+", " ", split2$word)
+  # Trim whitespace
+split2 <- split2 %>% mutate(word = trimws(word))
+  # Remove any remaining empty strings or NA values
+split2 <- split2 %>%
+    filter(word != "" & !is.na(word))
+  # Remove abbreviations and short words
+split2 <- split2 %>%
+    filter(nchar(word) > 2)
+  
+  # _________________________________________________________________
+  # Print
+  # _________________________________________________________________
+  
+print(split2)
+}
+```
+
+# Read in the Unabomber Manifesto
+Read from github repo and output its structure
+```{r}
+read_text <- function(url) {paste(readLines(url), collapse = " ")}
+  
+unabomb <- read_text('https://raw.githubusercontent.com/Reilly-ConceptsCognitionLab/reillylab_publicdata/main/unabomber_manifesto.txt')
+
+substr(unabomb, 1, 1000)
+```
+
+# Clean Unabomber Manifesto
+
+This text preprocessing will do basic cleaning including lowercasing, removing numbers and 
+punctuation, expanding contractions, removing stopwords, and lemmatizating.
+```{r}
+unabomb_clean <- nicole_genie(unabomb)
+```
+
+
+# My Hypothesis
+
+    I plan to conduct a sentiment analysis of the Unabomber Manifesto, examining five emotion varibales anger, sadness,     confusion, intensity, and trust. Based on what I know about Ted Kaczynski, I hypothesize that his text will exhibit low trust and high intensity. I predict anger, sadness, and confusion will remain relatively neutral throughout the document. First, his documented distrust of government institutions and current societal ideals suggests his writing should reflect low trust language. Second, his conviction that modern societial norms pose a threat to the future of humanity implies he would express this with high intensity. However, since he is highly educated I believe that his language will be a bit stoic and clinical lacking emotion expression like sadness and anger. I do not beleive confusion will be high or low because he writes with conviction and is hihgly educated.
+
+    Over time, I hypothesize that intensity and trust will form a U-shaped curve. I predict that Kaczynski will emphasize his big-picture ideology at the beginning and end of the text, where he introduces and concludes his argument. In the middle sections, I anticipate he will delve into nuanced details, which may reduce the intensity and trust signals as he focuses on evidence rather than his own ideological conviction. As for sadness, anger, and confusion, I belive these will be stable and neutral through the document
+
+
+
+# Load BIG lookup database
+Your lookup database contains values or 'metadata' for many words.  I have combined many published lexical databases into a single lexical lookup database that you can use for sentiment, etc.  Let's load that in from Github and inspect it
+```{r}
+
+load(url("https://github.com/Reilly-ConceptsCognitionLab/reillylab_publicdata/blob/main/lookup_Jul25.rda?raw=true"))
+lookup_db <- lookup_Jul25
+colnames(lookup_db)
+str(lookup_db)
+
+
+# Let's choose five variables. Basic sentiment analysis!
+
+lookup_small <- lookup_db %>% select(1, 2, 22, 10 , 18, 20)
+str(lookup_small)
+```
+# Sentiment Analysis
+
+Join lookup data to target text by row
+```{r}
+unabomb_sent <- unabomb_clean %>% dplyr::left_join(lookup_small, by = c("word")) 
+print(unabomb_sent)
+```
+# Plots
+```{r}
+unabomb_sent_long <- unabomb_sent %>%
+  mutate(position = row_number()) %>%
+  pivot_longer(cols = starts_with("emo_"), 
+               names_to = "emotion", 
+               values_to = "score")
+
+# Plot all emotions
+ggplot(unabomb_sent_long, aes(x = emotion, y = score, fill = emotion)) +
+  geom_boxplot() +
+  labs(title = "Emotion Distribution in Unabomber Manifesto",
+       x = "Emotion",
+       y = "Score") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+ggplot(unabomb_sent_long, aes(x = position, y = score, color = emotion)) +
+  geom_smooth(se = FALSE, method = "loess") +
+  labs(title = "Emotions Over Time in Unabomber Manifesto",
+       x = "Word Position",
+       y = "Emotion Score",
+       color = "Emotion") +
+  theme_minimal()
+```
+
+# Descriptive Statistics
+```{r}
+# Summarize emotion data
+unabomb_summary <- unabomb_sent %>%
+  summarize(
+    across(c("emo_anger", "emo_sadness", "emo_confusion", "emo_intensity", "emo_trust"),
+           list(
+             mean = ~mean(., na.rm = TRUE),
+             sd = ~sd(., na.rm = TRUE),
+             min = ~min(., na.rm = TRUE),
+             max = ~max(., na.rm = TRUE)
+           ),
+           .names = "{.col}_{.fn}")
+  )
+unabomb_summary
+```
+
+
+# Conclusion
+
+    According to my sentiment analysis of the Unabomber Manifesto, intensity emerges as the dominant emotion, registering notably higher than anger, confusion, sadness, and trust, which cluster near zero. The box plots reveal similar distributions across emotions, but the line plots tracking emotion scores across individual words reveal a more nuanced pattern: intensity spikes substantially above other emotion categories throughout the document.
+    Surprisingly, trust registers consistently above zero, indicating higher trust language than anticipated. This contradicts my initial hypothesis that Kaczynski's distrust of institutions would dominate his word choice. However, this may reflect trust directed toward his own ideology or reasoning rather than toward government and society.
+    As predicted, confusion hovers near zero, suggesting Kaczynski maintains a clear, logical writing style without ambivalent language. Sadness and anger register slightly below zero, aligning with my hypothesis that his measured, intellectual approach suppresses overt emotional expression. The stoic tone of his argument appears reflected in the sentiment data, with emotional language muted in favor of rational discourse and ideological conviction.

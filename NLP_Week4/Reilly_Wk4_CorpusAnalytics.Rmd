@@ -54,15 +54,18 @@ my_simple_sample <- sample_text_join
 
 #Note this contains meta-data
 print(my_simple_sample)
+
 ```
+
+
 # Prep for Analytics
 Let's get analytics on this simple text sample. We will use the `Quanteda` package. <br>
 https://quanteda.io/articles/quickstart.html
 ```{r}
 #load the quanteda package
-#library(quanteda)
+library(quanteda)
 #First step in quanteda is to convert the target text into a corpus retaining metadata. If you are doing this from a dataframe, you would tell quanteda the docid column and the text_field column
-my_simple_corpus  <- corpus(dat, docid_field = "author", text_field = "doc_text")
+my_simple_corpus  <- corpus(mobydick, docid_field = "author", text_field = "doc_text")
 
 #or read in a character vector as a corpus object here's Moby Dick
 md <- corpus(mobydick)
@@ -80,7 +83,7 @@ search for a keyword and show linguistic contexts
 ```{r}
 #tokenize the corpus object of Moby Dick 
 md_tokenized <- tokens(md)
-kwic(md_tokenized, pattern = "harpoon")
+kwic(md_tokenized, pattern = "whale")
 ```
 
 # tokenizer
@@ -93,11 +96,11 @@ md_tokenized <- tokens(md, remove_numbers = TRUE,  remove_punct = TRUE, remove_s
 onvert the corpus to a document term matrix -- well to be more precise, a document feature matrix because elements that are not words are also included
 ```{r}
 # Create a tokenized version of the corpus md, removing punctuation and stopwords
-tokens_md <- tokens(md, remove_punct = TRUE) %>% tokens_remove(stopwords("SMART"))
+tokens_md <- tokens(md, remove_punct = TRUE)%>% tokens_remove(stopwords("SMART"))
 
 # Create a document-feature matrix, applying stemming
 md_dfm <- dfm(tokens_md, dfm_stem = TRUE)
-topfeatures(md_dfm, 15)
+topfeatures(md_dfm, 50)
 
 ```
 
@@ -110,8 +113,9 @@ library("quanteda.textplots")
 
 ## Wordcloud
 ```{r}
-quanteda.textplots::textplot_wordcloud(md_dfm_small, random_order = FALSE, rotation = 0.25) #word cloud or another way
-topfeatures(md_dfm, 70)
+
+quanteda.textplots::textplot_wordcloud(md_dfm, random_order = FALSE, rotation = 0.25, color = "pink") #word cloud or another way
+topfeatures(md_dfm, 50)
 ```
 
 ## Lexical Dispersion Plot

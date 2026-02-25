@@ -71,14 +71,14 @@ str(lookup_db)
 # Let's choose five variables
 We can do some basic sentiment analysis or any other variable in the lookup database
 ```{r}
-lookup_small <- lookup_db %>% select(1, 2, 24, 27, 28)
+lookup_small <- lookup_db %>% select(1, 2, 22, 10 , 18, 4)
 str(lookup_small)
 ```
 
 # Join lookup data to target text by row
 ```{r}
-df_prep <- my_join %>% dplyr::left_join(lookup_small, by = c("doc_text" = "word")) 
-print(dr_prep)
+df_prep <- test %>% dplyr::left_join(lookup_small, by = c("doc_text" = "word")) 
+print(df_prep)
 ```
 
 
@@ -103,6 +103,7 @@ jamie_genie <- function(dat, wordcol, omit_stops = TRUE, lemmatize = TRUE) {
   library(tidyr)
   library(stringr)
   library(stringi)
+  
   
   # Input validation
   #need to tell R what column in your dataframe is the text in quotes 'wordcol', this error message checks
@@ -222,7 +223,7 @@ load(url("https://github.com/Reilly-ConceptsCognitionLab/reillylab_publicdata/bl
 
 # Test clean fn
 ```{r, eval=F}
-mycleandat <- clean_genie(unabomb)
+mycleandat <- jamie_genie(unabomb)
 print(mycleandat) 
 ```
 

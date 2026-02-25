@@ -47,7 +47,7 @@ library(readr)
 # use read file to read data in as a string
 df <- read_file("Path/to/file")
 ```
-   
+
     
 # Text Cleaning Functions
 ```{r, eval=FALSE}
@@ -55,7 +55,7 @@ df <- read_file("Path/to/file")
   x <- tolower(x) 
 ```
 
-Global Substitution (gsub)
+## Global Substitution (gsub)
 ```{r, eval=FALSE}
 # gsub() - Global Substitution (built-in base R function)
 
@@ -74,7 +74,8 @@ Global Substitution (gsub)
 ```
 
 
-# Split and Unlist Function
+
+## Split and Unlist Function
 ```{r, eval=FALSE}
 
 # strsplit() - Split a string into parts (built-in base R)
@@ -88,6 +89,40 @@ df <- unlist(strsplit(clean text dataframe, " "))
 df <- tibble(unlist(strsplit(clean text dataframe, " "))) 
 
 ```
+
+
+## Remove Stopwords
+```{r, eval=FALSE}
+
+# Load lists of stopwords locally
+load("/Users/tut38747/Library/CloudStorage/OneDrive-TempleUniversity/Serino_RData/NLP-Class/NLP_Week3/Temple_stops25.rda")
+load("/Users/tut38747/Library/CloudStorage/OneDrive-TempleUniversity/Serino_RData/NLP-Class/NLP_Week3/SMART_stops.rda")
+
+# Convert loaded data to character vectors
+SMART_stops <- as.character(SMART_stops$word)
+Temple_stops25 <- as.character(Temple_stops25$word)
+
+# Remove words from text
+df <- df %>% filter(!terms %in% stopwords_list)
+```
+
+## Replace Contractions
+```{r, eval=FALSE}
+# Load contraction replacement list from local file. This file contains contractions and their replacements.
+load("path/to/contraction_replacements.rda")
+
+# Apply replacements to each word in the dataframe
+# stri_replace_all_fixed() from stringi package replaces all exact matches of a pattern
+library(stringi)
+
+df$word <- stri_replace_all_fixed(
+  x = df$word,                                    
+  pattern = contraction_replacements$original,   # Pattern: What to search for
+  replacement = contraction_replacements$expanded,  # Replacement: What to replace it with
+  vectorize_all = FALSE)                         # Apply
+```
+
+
 
 # Counting Rows and Unique Items To Manuelly Compute TTR
 ```{r, eval=FALSE}
