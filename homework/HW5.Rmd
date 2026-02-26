@@ -227,7 +227,7 @@ str(lookup_db)
 
 
 # Let's choose five variables. Basic sentiment analysis!
-
+# Intensity, sadness, confusion, anger, and trust!
 lookup_small <- lookup_db %>% select(1, 2, 22, 10 , 18, 20)
 str(lookup_small)
 ```
@@ -235,39 +235,42 @@ str(lookup_small)
 
 Join lookup data to target text by row
 ```{r}
+
 unabomb_sent <- unabomb_clean %>% dplyr::left_join(lookup_small, by = c("word")) 
 print(unabomb_sent)
 ```
 # Plots
 ```{r}
+
+# convert to long form. Add row numbers
 unabomb_sent_long <- unabomb_sent %>%
   mutate(position = row_number()) %>%
   pivot_longer(cols = starts_with("emo_"), 
                names_to = "emotion", 
                values_to = "score")
 
-# Plot all emotions
+# Box plot
 ggplot(unabomb_sent_long, aes(x = emotion, y = score, fill = emotion)) +
   geom_boxplot() +
-  labs(title = "Emotion Distribution in Unabomber Manifesto",
+  labs(title = "Sentiment in Unabomber Manifesto",
        x = "Emotion",
        y = "Score") +
-  theme_minimal() +
+  theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-
+# Line graph (over time)
 ggplot(unabomb_sent_long, aes(x = position, y = score, color = emotion)) +
   geom_smooth(se = FALSE, method = "loess") +
-  labs(title = "Emotions Over Time in Unabomber Manifesto",
+  labs(title = "Sentiment Over Time in Unabomber Manifesto",
        x = "Word Position",
-       y = "Emotion Score",
+       y = "Score",
        color = "Emotion") +
-  theme_minimal()
+  theme_classic()
 ```
 
 # Descriptive Statistics
 ```{r}
-# Summarize emotion data
+# Print descriptive stats
 unabomb_summary <- unabomb_sent %>%
   summarize(
     across(c("emo_anger", "emo_sadness", "emo_confusion", "emo_intensity", "emo_trust"),
@@ -282,9 +285,12 @@ unabomb_summary <- unabomb_sent %>%
 unabomb_summary
 ```
 
-
 # Conclusion
 
-    According to my sentiment analysis of the Unabomber Manifesto, intensity emerges as the dominant emotion, registering notably higher than anger, confusion, sadness, and trust, which cluster near zero. The box plots reveal similar distributions across emotions, but the line plots tracking emotion scores across individual words reveal a more nuanced pattern: intensity spikes substantially above other emotion categories throughout the document.
-    Surprisingly, trust registers consistently above zero, indicating higher trust language than anticipated. This contradicts my initial hypothesis that Kaczynski's distrust of institutions would dominate his word choice. However, this may reflect trust directed toward his own ideology or reasoning rather than toward government and society.
-    As predicted, confusion hovers near zero, suggesting Kaczynski maintains a clear, logical writing style without ambivalent language. Sadness and anger register slightly below zero, aligning with my hypothesis that his measured, intellectual approach suppresses overt emotional expression. The stoic tone of his argument appears reflected in the sentiment data, with emotional language muted in favor of rational discourse and ideological conviction.
+    According to my sentiment analysis, intensity in the Unabomber Manifesto appears to be slightly higher than the other emotion categories. Anger, confusion, sadness, and trust all seem relatively neutral, with values close to zero. According to my visualization the boxplots convey similar median across emotions. Intensity seems to have a median slightly higher than the other emotions with a larger variance. The line plots track language through the duration of corpus. These show that intensity is consistently higher than the other emotions. Over the duration of the corpus, intensity seems to demonstrate a sinusoidal pattern. Although it fluctuates, it starts more intense than it ends. This does not align with my hypothesis. Addionally, against my hypothesis, trust tends to be slightly above zero compared to the others, indicating relatively higher trust-related language was used. This was surprising, because I expected him to demonstrate low trust due to his arguments theme. Trust stays relatively stable throughout the corpus.Confusion in the manifesto remains close to zero, while sadness and anger are slightly below zero, which aligns with what I initially expected. These emotions also remain relatively stable throughout the corpus. Overall, I am not sure this high level sentiment analysis did a robust job at describing the true sentiment of the author. 
+    
+    
+    
+    
+    
+  
