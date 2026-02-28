@@ -1,5 +1,5 @@
 ---
-title: "Cheatsheet"
+title: "CheatsheetHW3"
 author: "Nicole Serino"
 date: "2026-01-21"
 output:
@@ -75,22 +75,6 @@ df <- read_file("Path/to/file")
 
 
 
-## Split and Unlist Function
-```{r, eval=FALSE}
-
-# strsplit() - Split a string into parts (built-in base R)
-# unlist() - Convert a list to a vector (built-in base R)
-
-#Split string and unlist
-df <- unlist(strsplit(clean text dataframe, " "))
-
-#Split string and unlist so it is a vectr. Store each word in a row of a tibble.
-#This tibble will be a data frame with one column
-df <- tibble(unlist(strsplit(clean text dataframe, " "))) 
-
-```
-
-
 ## Remove Stopwords
 ```{r, eval=FALSE}
 
@@ -117,11 +101,50 @@ library(stringi)
 
 df$word <- stri_replace_all_fixed(
   x = df$word,                                    
-  pattern = contraction_replacements$original,   # Pattern: What to search for
-  replacement = contraction_replacements$expanded,  # Replacement: What to replace it with
-  vectorize_all = FALSE)                         # Apply
+  pattern = contraction_replacements$original,   # What to search for
+  replacement = contraction_replacements$expanded,  # What to replace it with
+  vectorize_all = FALSE)                        
 ```
 
+
+# Split and Unlist Functions
+```{r, eval=FALSE}
+# When text is a string
+# strsplit() - Split a string into parts (built-in base R)
+# unlist() - Convert a list to a vector (built-in base R)
+
+#Split string and unlist
+df <- unlist(strsplit(clean text dataframe, " "))
+
+#Split string and unlist so it is a vectr. Store each word in a row of a tibble.
+#This tibble will be a data frame with one column
+df <- tibble(unlist(strsplit(clean text dataframe, " "))) 
+```
+
+# Muatate and Unest Functions
+```{r, eval=FALSE}
+# strsplit() - Split the text by spaces
+df <- df %>%
+  mutate(text_col = strsplit(text_col, " "))
+
+# unnest() - Expand lists into separate rows
+df <- df %>%
+  unnest(text_col)
+
+# trimws() - Remove extra whitespace
+df <- df %>%
+  mutate(text_col = trimws(text_col))
+```
+
+# lemmatize
+```{r, eval=FALSE}
+library(dplyr)      # For mutate()
+library(textstem)   # For lemmatize_words()
+
+# Lemmatize
+df <- df %>%
+    mutate(word = lemmatize_words(word))
+```
 
 
 # Counting Rows and Unique Items To Manuelly Compute TTR
@@ -141,3 +164,5 @@ token <- nrow(df)
 TTR <- (token/type)
 TTR
 ```
+
+

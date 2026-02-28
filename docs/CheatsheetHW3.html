@@ -13,7 +13,7 @@
 
 <meta name="date" content="2026-01-21" />
 
-<title>Cheatsheet</title>
+<title>CheatsheetHW3</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1612,7 +1612,7 @@ border-radius: 0px;
 
 
 
-<h1 class="title toc-ignore">Cheatsheet</h1>
+<h1 class="title toc-ignore">CheatsheetHW3</h1>
 <h4 class="author">Nicole Serino</h4>
 <h4 class="date">2026-01-21</h4>
 
@@ -1647,18 +1647,6 @@ df &lt;- read_file(&quot;Path/to/file&quot;)</code></pre>
 #remove extra spaces by removing whitespace characters that occur more than once in a row.  
   x &lt;- gsub(&quot;\\s+&quot;, &quot; &quot;, x)</code></pre>
 </div>
-<div id="split-and-unlist-function" class="section level2">
-<h2>Split and Unlist Function</h2>
-<pre class="r"><code># strsplit() - Split a string into parts (built-in base R)
-# unlist() - Convert a list to a vector (built-in base R)
-
-#Split string and unlist
-df &lt;- unlist(strsplit(clean text dataframe, &quot; &quot;))
-
-#Split string and unlist so it is a vectr. Store each word in a row of a tibble.
-#This tibble will be a data frame with one column
-df &lt;- tibble(unlist(strsplit(clean text dataframe, &quot; &quot;))) </code></pre>
-</div>
 <div id="remove-stopwords" class="section level2">
 <h2>Remove Stopwords</h2>
 <pre class="r"><code># Load lists of stopwords locally
@@ -1683,10 +1671,46 @@ library(stringi)
 
 df$word &lt;- stri_replace_all_fixed(
   x = df$word,                                    
-  pattern = contraction_replacements$original,   # Pattern: What to search for
-  replacement = contraction_replacements$expanded,  # Replacement: What to replace it with
-  vectorize_all = FALSE)                         # Apply</code></pre>
+  pattern = contraction_replacements$original,   # What to search for
+  replacement = contraction_replacements$expanded,  # What to replace it with
+  vectorize_all = FALSE)                        </code></pre>
 </div>
+</div>
+<div id="split-and-unlist-functions" class="section level1">
+<h1>Split and Unlist Functions</h1>
+<pre class="r"><code># When text is a string
+# strsplit() - Split a string into parts (built-in base R)
+# unlist() - Convert a list to a vector (built-in base R)
+
+#Split string and unlist
+df &lt;- unlist(strsplit(clean text dataframe, &quot; &quot;))
+
+#Split string and unlist so it is a vectr. Store each word in a row of a tibble.
+#This tibble will be a data frame with one column
+df &lt;- tibble(unlist(strsplit(clean text dataframe, &quot; &quot;))) </code></pre>
+</div>
+<div id="muatate-and-unest-functions" class="section level1">
+<h1>Muatate and Unest Functions</h1>
+<pre class="r"><code># strsplit() - Split the text by spaces
+df &lt;- df %&gt;%
+  mutate(text_col = strsplit(text_col, &quot; &quot;))
+
+# unnest() - Expand lists into separate rows
+df &lt;- df %&gt;%
+  unnest(text_col)
+
+# trimws() - Remove extra whitespace
+df &lt;- df %&gt;%
+  mutate(text_col = trimws(text_col))</code></pre>
+</div>
+<div id="lemmatize" class="section level1">
+<h1>lemmatize</h1>
+<pre class="r"><code>library(dplyr)      # For mutate()
+library(textstem)   # For lemmatize_words()
+
+# Lemmatize
+df &lt;- df %&gt;%
+    mutate(word = lemmatize_words(word))</code></pre>
 </div>
 <div id="counting-rows-and-unique-items-to-manuelly-compute-ttr" class="section level1">
 <h1>Counting Rows and Unique Items To Manuelly Compute TTR</h1>
